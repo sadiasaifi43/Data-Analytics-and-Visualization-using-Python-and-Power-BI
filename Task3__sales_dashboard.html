@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sales & Revenue Dashboard 2024</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0c10;
+    --surface: #111318;
+    --surface2: #181b22;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #f0f2f7;
+    --muted: #7a8098;
+    --accent: #4f8ef7;
+    --accent2: #00d4a8;
+    --accent3: #ff6b6b;
+    --accent4: #f5a623;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+  }
+
+  html { font-size: 14px; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    padding: 0;
+    overflow-x: hidden;
+  }
+
+  /* Animated background grid */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0;
+    background-image:
+      linear-gradient(rgba(79,142,247,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(79,142,247,0.03) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+  }
+
+  .wrapper { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+  /* Header */
+  .header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;
+    animation: fadeUp 0.6s ease both;
+  }
+  .header-left h1 {
+    font-family: var(--font-head);
+    font-size: 2rem; font-weight: 800; letter-spacing: -0.03em;
+    background: linear-gradient(135deg, #f0f2f7 0%, #4f8ef7 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .header-left p { color: var(--muted); font-size: 0.9rem; margin-top: 4px; }
+  .live-badge {
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(0,212,168,0.1); border: 1px solid rgba(0,212,168,0.2);
+    color: var(--accent2); font-size: 0.8rem; font-weight: 500;
+    padding: 6px 14px; border-radius: 100px;
+    font-family: var(--font-head);
+  }
+  .live-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent2);
+    animation: pulse 1.5s ease infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.8); }
+  }
+
+  /* Controls */
+  .controls {
+    display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 1.5rem;
+    animation: fadeUp 0.6s 0.1s ease both;
+  }
+  .btn-filter {
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--muted); font-family: var(--font-head);
+    font-size: 0.8rem; font-weight: 600; letter-spacing: 0.05em;
+    padding: 8px 18px; border-radius: 8px; cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+  }
+  .btn-filter:hover { border-color: var(--border2); color: var(--text); }
+  .btn-filter.active {
+    background: var(--accent); border-color: var(--accent);
+    color: #fff;
+  }
+
+  /* KPI Grid */
+  .kpi-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 12px; margin-bottom: 1.5rem;
+  }
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px; padding: 1.4rem;
+    position: relative; overflow: hidden;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+    animation: fadeUp 0.6s ease both;
+  }
+  .kpi-card:hover { transform: translateY(-2px); border-color: var(--border2); }
+  .kpi-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0;
+    height: 2px; border-radius: 16px 16px 0 0;
+  }
+  .kpi-card:nth-child(1)::before { background: var(--accent); }
+  .kpi-card:nth-child(2)::before { background: var(--accent2); }
+  .kpi-card:nth-child(3)::before { background: var(--accent4); }
+  .kpi-card:nth-child(4)::before { background: var(--accent3); }
+  .kpi-card:nth-child(1) { animation-delay: 0.15s; }
+  .kpi-card:nth-child(2) { animation-delay: 0.2s; }
+  .kpi-card:nth-child(3) { animation-delay: 0.25s; }
+  .kpi-card:nth-child(4) { animation-delay: 0.3s; }
+  .kpi-label {
+    font-size: 0.72rem; color: var(--muted);
+    font-family: var(--font-head); font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 8px;
+  }
+  .kpi-value {
+    font-family: var(--font-head); font-size: 2rem;
+    font-weight: 800; letter-spacing: -0.03em; color: var(--text);
+    transition: all 0.4s ease;
+  }
+  .kpi-delta {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 0.78rem; margin-top: 6px; padding: 3px 8px;
+    border-radius: 6px; font-weight: 500;
+  }
+  .kpi-delta.up { background: rgba(0,212,168,0.1); color: var(--accent2); }
+  .kpi-delta.down { background: rgba(255,107,107,0.1); color: var(--accent3); }
+  .kpi-icon {
+    position: absolute; top: 1rem; right: 1rem;
+    font-size: 1.4rem; opacity: 0.15;
+  }
+
+  /* Charts Layout */
+  .charts-main {
+    display: grid; grid-template-columns: 1.6fr 1fr;
+    gap: 12px; margin-bottom: 12px;
+    animation: fadeUp 0.6s 0.35s ease both;
+  }
+  .charts-bottom {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    animation: fadeUp 0.6s 0.45s ease both;
+  }
+
+  /* Chart Cards */
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px; padding: 1.4rem;
+    position: relative;
+  }
+  .chart-card-title {
+    font-family: var(--font-head); font-weight: 700;
+    font-size: 0.85rem; color: var(--text);
+    letter-spacing: -0.01em; margin-bottom: 4px;
+  }
+  .chart-card-sub { font-size: 0.75rem; color: var(--muted); margin-bottom: 1rem; }
+  .chart-wrap { position: relative; }
+
+  /* Legend */
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 12px;
+    margin-bottom: 10px;
+  }
+  .legend-item {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 0.75rem; color: var(--muted);
+  }
+  .legend-sq { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+
+  /* Top Products Table */
+  .top-table { width: 100%; border-collapse: collapse; }
+  .top-table th {
+    font-size: 0.7rem; color: var(--muted);
+    font-family: var(--font-head); font-weight: 600;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    text-align: left; padding: 0 0 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .top-table th:last-child { text-align: right; }
+  .top-table td {
+    padding: 10px 0; font-size: 0.82rem;
+    border-bottom: 1px solid var(--border); color: var(--text);
+    vertical-align: middle;
+  }
+  .top-table tr:last-child td { border-bottom: none; }
+  .prod-name { font-weight: 500; margin-bottom: 4px; }
+  .prod-bar-wrap { height: 4px; background: rgba(255,255,255,0.06); border-radius: 4px; }
+  .prod-bar { height: 4px; border-radius: 4px; background: var(--accent); transition: width 0.6s ease; }
+  .badge { display: inline-block; font-size: 0.7rem; padding: 2px 8px; border-radius: 6px; font-weight: 500; }
+  .badge-up { background: rgba(0,212,168,0.1); color: var(--accent2); }
+  .badge-dn { background: rgba(255,107,107,0.1); color: var(--accent3); }
+
+  /* Scrolling ticker */
+  .ticker-wrap {
+    overflow: hidden; white-space: nowrap;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 8px 0; margin-bottom: 1.5rem;
+    animation: fadeUp 0.6s 0.05s ease both;
+  }
+  .ticker-inner {
+    display: inline-block;
+    animation: ticker 30s linear infinite;
+  }
+  .ticker-item {
+    display: inline-block; padding: 0 2rem;
+    font-size: 0.78rem; color: var(--muted);
+    font-family: var(--font-head); font-weight: 600; letter-spacing: 0.04em;
+  }
+  .ticker-item span { margin-left: 6px; }
+  .ticker-item .up { color: var(--accent2); }
+  .ticker-item .dn { color: var(--accent3); }
+  .ticker-sep { color: var(--border2); }
+  @keyframes ticker {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  /* Animate in */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Timestamp */
+  #live-time { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+
+  /* Footer */
+  .footer {
+    margin-top: 2rem; text-align: center;
+    font-size: 0.72rem; color: var(--muted);
+    font-family: var(--font-head); letter-spacing: 0.06em;
+    text-transform: uppercase;
+    animation: fadeUp 0.6s 0.5s ease both;
+  }
+
+  @media (max-width: 1100px) {
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .charts-main { grid-template-columns: 1fr; }
+    .charts-bottom { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 600px) {
+    .kpi-grid { grid-template-columns: 1fr; }
+    .header-left h1 { font-size: 1.4rem; }
+    .kpi-value { font-size: 1.6rem; }
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <h1>Sales &amp; Revenue Dashboard</h1>
+      <p>CodTech Internship Task 3 &mdash; Dashboard Development &nbsp;|&nbsp; <span id="live-time"></span></p>
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px">
+      <div class="live-badge"><div class="live-dot"></div> Live Data</div>
+    </div>
+  </div>
+
+  <!-- Ticker -->
+  <div class="ticker-wrap">
+    <div class="ticker-inner" id="tickerInner"></div>
+  </div>
+
+  <!-- Period Filters -->
+  <div class="controls">
+    <button class="btn-filter active" onclick="setFilter('full',this)">Full Year 2024</button>
+    <button class="btn-filter" onclick="setFilter('q1',this)">Q1</button>
+    <button class="btn-filter" onclick="setFilter('q2',this)">Q2</button>
+    <button class="btn-filter" onclick="setFilter('q3',this)">Q3</button>
+    <button class="btn-filter" onclick="setFilter('q4',this)">Q4</button>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-icon">💰</div>
+      <div class="kpi-label">Total Revenue</div>
+      <div class="kpi-value" id="kv-rev">$4.82M</div>
+      <div class="kpi-delta up" id="kd-rev">▲ 18.4% YoY</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon">📦</div>
+      <div class="kpi-label">Total Orders</div>
+      <div class="kpi-value" id="kv-ord">12,840</div>
+      <div class="kpi-delta up" id="kd-ord">▲ 11.2% YoY</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon">🧾</div>
+      <div class="kpi-label">Avg. Order Value</div>
+      <div class="kpi-value" id="kv-aov">$375</div>
+      <div class="kpi-delta up" id="kd-aov">▲ 6.5% YoY</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon">📈</div>
+      <div class="kpi-label">Gross Margin</div>
+      <div class="kpi-value" id="kv-margin">42.3%</div>
+      <div class="kpi-delta down" id="kd-margin">▼ 1.1pp YoY</div>
+    </div>
+  </div>
+
+  <!-- Main Charts Row -->
+  <div class="charts-main">
+    <div class="chart-card">
+      <div class="chart-card-title">Monthly Revenue &amp; Order Volume</div>
+      <div class="chart-card-sub">Dual-axis trend — Revenue ($K) vs. Orders</div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-sq" style="background:#4f8ef7"></div>Revenue ($K)</div>
+        <div class="legend-item"><div class="legend-sq" style="background:#00d4a8; border-radius:50%"></div>Orders (dashed)</div>
+      </div>
+      <div class="chart-wrap" style="height:260px"><canvas id="lineChart" role="img" aria-label="Monthly revenue and orders trend chart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-card-title">Revenue by Category</div>
+      <div class="chart-card-sub">Product category contribution</div>
+      <div id="pieLegend" class="legend"></div>
+      <div class="chart-wrap" style="height:260px"><canvas id="pieChart" role="img" aria-label="Revenue by product category donut chart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Bottom Charts Row -->
+  <div class="charts-bottom">
+    <div class="chart-card">
+      <div class="chart-card-title">Regional Performance</div>
+      <div class="chart-card-sub">2024 vs 2023 comparison ($K)</div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-sq" style="background:#4f8ef7"></div>2024</div>
+        <div class="legend-item"><div class="legend-sq" style="background:#3a3f52"></div>2023</div>
+      </div>
+      <div class="chart-wrap" style="height:210px"><canvas id="barChart" role="img" aria-label="Regional sales bar chart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-card-title">Monthly Growth Rate</div>
+      <div class="chart-card-sub">Month-over-month revenue change (%)</div>
+      <div class="chart-wrap" style="height:210px"><canvas id="growthChart" role="img" aria-label="Monthly growth rate bar chart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-card-title">Top 5 Products</div>
+      <div class="chart-card-sub">By revenue — YTD 2024</div>
+      <table class="top-table">
+        <thead><tr><th>Product</th><th style="text-align:right">Revenue</th><th style="text-align:right">Growth</th></tr></thead>
+        <tbody id="topTable"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="footer">CodTech Internship &nbsp;·&nbsp; Task 3 — Dashboard Development &nbsp;·&nbsp; Sales &amp; Revenue Analytics 2024</div>
+</div>
+
+<script>
+// ── Data ──────────────────────────────────────────────────────────────────────
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const ALL_REV  = [310,295,420,390,450,510,480,540,610,575,620,820];
+const ALL_ORD  = [820,790,1050,960,1100,1240,1180,1310,1480,1400,1520,1990];
+
+const FILTERS = {
+  full: { label:'Full Year 2024', idx:[0,1,2,3,4,5,6,7,8,9,10,11], kpi:{ rev:'$4.82M', ord:'12,840', aov:'$375', margin:'42.3%', rdClass:'up', rdTxt:'▲ 18.4% YoY', odClass:'up', odTxt:'▲ 11.2% YoY', adClass:'up', adTxt:'▲ 6.5% YoY', mdClass:'down', mdTxt:'▼ 1.1pp YoY' }},
+  q1:   { label:'Q1 2024', idx:[0,1,2], kpi:{ rev:'$1.02M', ord:'2,660', aov:'$383', margin:'44.1%', rdClass:'up', rdTxt:'▲ 12.1% YoY', odClass:'up', odTxt:'▲ 8.4% YoY', adClass:'up', adTxt:'▲ 3.4% YoY', mdClass:'up', mdTxt:'▲ 0.8pp YoY' }},
+  q2:   { label:'Q2 2024', idx:[3,4,5], kpi:{ rev:'$1.35M', ord:'3,300', aov:'$409', margin:'45.2%', rdClass:'up', rdTxt:'▲ 16.8% YoY', odClass:'up', odTxt:'▲ 10.1% YoY', adClass:'up', adTxt:'▲ 6.1% YoY', mdClass:'up', mdTxt:'▲ 1.5pp YoY' }},
+  q3:   { label:'Q3 2024', idx:[6,7,8], kpi:{ rev:'$1.63M', ord:'3,970', aov:'$411', margin:'41.0%', rdClass:'up', rdTxt:'▲ 19.7% YoY', odClass:'up', odTxt:'▲ 12.8% YoY', adClass:'up', adTxt:'▲ 6.2% YoY', mdClass:'down', mdTxt:'▼ 0.7pp YoY' }},
+  q4:   { label:'Q4 2024', idx:[9,10,11], kpi:{ rev:'$2.02M', ord:'4,910', aov:'$411', margin:'40.1%', rdClass:'up', rdTxt:'▲ 23.8% YoY', odClass:'up', odTxt:'▲ 15.3% YoY', adClass:'up', adTxt:'▲ 7.3% YoY', mdClass:'down', mdTxt:'▼ 2.2pp YoY' }}
+};
+
+const PIE_LABELS = ['Enterprise Suite','Analytics Pro','Cloud Storage','Support Plans','Hardware Bundle'];
+const PIE_DATA   = [890, 670, 520, 410, 295];
+const PIE_COLORS = ['#4f8ef7','#00d4a8','#f5a623','#ff6b6b','#6c7aff'];
+
+const REGIONS    = ['North','South','East','West'];
+const BAR_2024   = [1380, 950, 1620, 870];
+const BAR_2023   = [1150, 870, 1340, 790];
+
+const TOP_PRODS  = [
+  { name:'Enterprise Suite', rev:'$890K', pct:90, g:'+24%', up:true },
+  { name:'Analytics Pro',    rev:'$670K', pct:68, g:'+18%', up:true },
+  { name:'Cloud Storage',    rev:'$520K', pct:53, g:'+31%', up:true },
+  { name:'Support Plans',    rev:'$410K', pct:41, g:'-4%',  up:false },
+  { name:'Hardware Bundle',  rev:'$295K', pct:30, g:'+7%',  up:true }
+];
+
+const TICKER_BASE = [
+  { label:'Enterprise Suite', val:'+24%', up:true },
+  { label:'Analytics Pro',    val:'+18%', up:true },
+  { label:'Cloud Storage',    val:'+31%', up:true },
+  { label:'Support Plans',    val:'-4%',  up:false },
+  { label:'Total Revenue',    val:'+18.4%', up:true },
+  { label:'East Region',      val:'+21%', up:true },
+  { label:'Gross Margin',     val:'42.3%', up:null },
+  { label:'Q4 Revenue',       val:'$2.02M', up:null },
+  { label:'AOV',              val:'$375', up:null },
+  { label:'Orders YTD',       val:'12,840', up:null },
+];
+
+// ── Charts ────────────────────────────────────────────────────────────────────
+let lineChart, pieChart, barChart, growthChart;
+let currentFilter = 'full';
+
+function buildGrowth(idx) {
+  const vals = idx.map(i => ALL_REV[i]);
+  const growth = [0];
+  for (let i = 1; i < vals.length; i++) {
+    growth.push(parseFloat(((vals[i] - vals[i-1]) / vals[i-1] * 100).toFixed(1)));
+  }
+  return growth;
+}
+
+function initCharts() {
+  const cfg = FILTERS[currentFilter];
+  const labels = cfg.idx.map(i => MONTHS[i]);
+  const revData = cfg.idx.map(i => ALL_REV[i]);
+  const ordData = cfg.idx.map(i => ALL_ORD[i]);
+  const growData = buildGrowth(cfg.idx);
+
+  // Line Chart
+  lineChart = new Chart(document.getElementById('lineChart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label:'Revenue ($K)', data: revData, borderColor:'#4f8ef7', backgroundColor:'rgba(79,142,247,0.08)', tension:0.45, pointRadius:4, pointBackgroundColor:'#4f8ef7', yAxisID:'y', borderWidth:2.5 },
+        { label:'Orders', data: ordData, borderColor:'#00d4a8', backgroundColor:'transparent', tension:0.45, pointRadius:4, pointBackgroundColor:'#00d4a8', yAxisID:'y2', borderDash:[5,4], borderWidth:2 }
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false, animation:{ duration:700 },
+      plugins:{ legend:{ display:false }, tooltip:{ backgroundColor:'#181b22', borderColor:'rgba(255,255,255,0.1)', borderWidth:1, titleColor:'#f0f2f7', bodyColor:'#7a8098', padding:10 }},
+      scales:{
+        y:{ position:'left', grid:{ color:'rgba(255,255,255,0.05)' }, ticks:{ color:'#7a8098', font:{size:11}, callback:v=>'$'+v+'K' }},
+        y2:{ position:'right', grid:{ drawOnChartArea:false }, ticks:{ color:'#7a8098', font:{size:11} }},
+        x:{ grid:{ color:'rgba(255,255,255,0.04)' }, ticks:{ color:'#7a8098', font:{size:11}, autoSkip:false }}
+      }
+    }
+  });
+
+  // Pie / Donut
+  pieChart = new Chart(document.getElementById('pieChart'), {
+    type:'doughnut',
+    data:{ labels: PIE_LABELS, datasets:[{ data: PIE_DATA, backgroundColor: PIE_COLORS, borderWidth:2, borderColor:'#111318', hoverOffset:8 }]},
+    options:{ responsive:true, maintainAspectRatio:false, cutout:'62%',
+      animation:{ animateRotate:true, duration:700 },
+      plugins:{ legend:{ display:false }, tooltip:{ backgroundColor:'#181b22', borderColor:'rgba(255,255,255,0.1)', borderWidth:1, titleColor:'#f0f2f7', bodyColor:'#7a8098', padding:10, callbacks:{ label: ctx => ' ' + ctx.label + ': $' + ctx.raw + 'K' }}}
+    }
+  });
+
+  // Build pie legend
+  const pl = document.getElementById('pieLegend');
+  pl.innerHTML = PIE_LABELS.map((l,i) => `<div class="legend-item"><div class="legend-sq" style="background:${PIE_COLORS[i]}"></div>${l}</div>`).join('');
+
+  // Bar Chart
+  barChart = new Chart(document.getElementById('barChart'), {
+    type:'bar',
+    data:{
+      labels: REGIONS,
+      datasets:[
+        { label:'2024', data: BAR_2024, backgroundColor:'#4f8ef7', borderRadius:6 },
+        { label:'2023', data: BAR_2023, backgroundColor:'#2e3348', borderRadius:6 }
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false, animation:{ duration:700 },
+      plugins:{ legend:{ display:false }, tooltip:{ backgroundColor:'#181b22', borderColor:'rgba(255,255,255,0.1)', borderWidth:1, titleColor:'#f0f2f7', bodyColor:'#7a8098', padding:10, callbacks:{ label: ctx => ' ' + ctx.dataset.label + ': $' + ctx.raw + 'K' }}},
+      scales:{
+        x:{ grid:{ display:false }, ticks:{ color:'#7a8098', font:{size:12} }},
+        y:{ grid:{ color:'rgba(255,255,255,0.05)' }, ticks:{ color:'#7a8098', font:{size:11}, callback:v=>'$'+v+'K' }}
+      }
+    }
+  });
+
+  // Growth chart
+  const growColors = growData.map((v,i) => i===0 ? '#4f8ef7' : v >= 0 ? '#00d4a8' : '#ff6b6b');
+  growthChart = new Chart(document.getElementById('growthChart'), {
+    type:'bar',
+    data:{
+      labels,
+      datasets:[{ label:'MoM Growth (%)', data: growData, backgroundColor: growColors, borderRadius:5 }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false, animation:{ duration:700 },
+      plugins:{ legend:{ display:false }, tooltip:{ backgroundColor:'#181b22', borderColor:'rgba(255,255,255,0.1)', borderWidth:1, titleColor:'#f0f2f7', bodyColor:'#7a8098', padding:10, callbacks:{ label: ctx => ' ' + ctx.raw + '%' }}},
+      scales:{
+        x:{ grid:{ display:false }, ticks:{ color:'#7a8098', font:{size:11}, autoSkip:false }},
+        y:{ grid:{ color:'rgba(255,255,255,0.05)' }, ticks:{ color:'#7a8098', font:{size:11}, callback:v=>v+'%' }}
+      }
+    }
+  });
+
+  buildTopTable();
+}
+
+function updateCharts(filter) {
+  currentFilter = filter;
+  const cfg = FILTERS[filter];
+  const labels = cfg.idx.map(i => MONTHS[i]);
+  const revData = cfg.idx.map(i => ALL_REV[i]);
+  const ordData = cfg.idx.map(i => ALL_ORD[i]);
+  const growData = buildGrowth(cfg.idx);
+  const growColors = growData.map((v,i) => i===0 ? '#4f8ef7' : v >= 0 ? '#00d4a8' : '#ff6b6b');
+
+  lineChart.data.labels = labels;
+  lineChart.data.datasets[0].data = revData;
+  lineChart.data.datasets[1].data = ordData;
+  lineChart.update();
+
+  growthChart.data.labels = labels;
+  growthChart.data.datasets[0].data = growData;
+  growthChart.data.datasets[0].backgroundColor = growColors;
+  growthChart.update();
+
+  // KPIs
+  const k = cfg.kpi;
+  animateText('kv-rev', k.rev);
+  animateText('kv-ord', k.ord);
+  animateText('kv-aov', k.aov);
+  animateText('kv-margin', k.margin);
+  setDelta('kd-rev', k.rdClass, k.rdTxt);
+  setDelta('kd-ord', k.odClass, k.odTxt);
+  setDelta('kd-aov', k.adClass, k.adTxt);
+  setDelta('kd-margin', k.mdClass, k.mdTxt);
+}
+
+function animateText(id, val) {
+  const el = document.getElementById(id);
+  el.style.opacity = '0';
+  el.style.transform = 'translateY(6px)';
+  setTimeout(() => {
+    el.textContent = val;
+    el.style.transition = 'all 0.35s ease';
+    el.style.opacity = '1';
+    el.style.transform = 'translateY(0)';
+  }, 120);
+}
+
+function setDelta(id, cls, txt) {
+  const el = document.getElementById(id);
+  el.className = 'kpi-delta ' + cls;
+  el.textContent = txt;
+}
+
+function setFilter(f, btn) {
+  document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  updateCharts(f);
+}
+
+function buildTopTable() {
+  const tb = document.getElementById('topTable');
+  tb.innerHTML = TOP_PRODS.map(p => `
+    <tr>
+      <td>
+        <div class="prod-name">${p.name}</div>
+        <div class="prod-bar-wrap"><div class="prod-bar" style="width:${p.pct}%"></div></div>
+      </td>
+      <td style="text-align:right; font-weight:500; color:#f0f2f7; padding-right:0">${p.rev}</td>
+      <td style="text-align:right"><span class="badge ${p.up?'badge-up':'badge-dn'}">${p.g}</span></td>
+    </tr>`).join('');
+}
+
+// ── Ticker ────────────────────────────────────────────────────────────────────
+function buildTicker() {
+  const items = [...TICKER_BASE, ...TICKER_BASE]; // doubled for seamless loop
+  const html = items.map(t => `
+    <span class="ticker-item">
+      ${t.label}: <span class="${t.up===true?'up':t.up===false?'dn':''}">${t.val}</span>
+    </span><span class="ticker-sep ticker-item">|</span>
+  `).join('');
+  document.getElementById('tickerInner').innerHTML = html;
+}
+
+// ── Live Time ─────────────────────────────────────────────────────────────────
+function updateTime() {
+  const now = new Date();
+  const opts = { weekday:'short', year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit' };
+  document.getElementById('live-time').textContent = now.toLocaleString('en-IN', opts);
+}
+
+// ── Live data flicker (simulated real-time) ───────────────────────────────────
+function liveFlicker() {
+  // Randomly nudge one KPI slightly to simulate live feed
+  const kpiIds = ['kv-rev','kv-ord','kv-aov','kv-margin'];
+  const pick = kpiIds[Math.floor(Math.random()*kpiIds.length)];
+  const el = document.getElementById(pick);
+  el.style.color = '#4f8ef7';
+  setTimeout(() => { el.style.color = ''; el.style.transition = 'color 0.6s'; }, 400);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+buildTicker();
+updateTime();
+setInterval(updateTime, 1000);
+setInterval(liveFlicker, 3500);
+initCharts();
+</script>
+</body>
+</html>
